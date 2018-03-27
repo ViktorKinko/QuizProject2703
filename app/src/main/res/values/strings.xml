@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="notification_countdown">Time left: %d</string>
+</resources>
