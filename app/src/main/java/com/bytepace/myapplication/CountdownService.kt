@@ -1,12 +1,17 @@
 package com.bytepace.myapplication
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
+import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
 import android.widget.RemoteViews
 import rx.Observable
@@ -19,6 +24,8 @@ const val MILLIS_IN_SECOND: Long = 1000
 const val ARG_START_TIME: String = "Start time"
 
 class CountdownService : Service() {
+
+    private lateinit var mBuilder: NotificationCompat.Builder
 
     companion object {
         fun newIntent(context: Context, duration: Long): Intent {
@@ -82,12 +89,33 @@ class CountdownService : Service() {
     }
 
     private fun buildNotification(views: RemoteViews): Notification {
-        val mBuilder = NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Countdown")
-                .setContent(views)
-                .setAutoCancel(false)
-                .setOngoing(true)
+        if (!this::mBuilder.isInitialized) {
+            val channelId =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                        createNotificationChannel()
+                    else ""
+            mBuilder = NotificationCompat.Builder(this, channelId)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Countdown")
+                    .setContent(views)
+                    .setSmallIcon(android.R.drawable.ic_menu_recent_history)
+                    .setAutoCancel(false)
+                    .setOngoing(true)
+        } else {
+            mBuilder.setContent(views)
+        }
         return mBuilder.build()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createNotificationChannel(): String {
+        val channelId = "countdown_quiz_service"
+        val channelName = "Countdown foreground service"
+        val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_NONE)
+        channel.lightColor = Color.BLUE
+        channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        service.createNotificationChannel(channel)
+        return channelId
     }
 }
